@@ -31,6 +31,6 @@ func RequestIDValidator(validator requestIDValidator) Option {
 	})
 }
 
-func defaultReqeustIDValidator(requestID string) bool {
+func defaultRequestIDValidator(requestID string) bool {
 	return true
 }

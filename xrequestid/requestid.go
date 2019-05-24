@@ -5,6 +5,7 @@ import (
 
 	"github.com/renstrom/shortuuid"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -12,6 +13,8 @@ import (
 var DefaultXRequestIDKey = "x-request-id"
 
 func HandleRequestID(ctx context.Context, validator requestIDValidator) string {
+	var requestID string
+	defer addToResponse(ctx, &requestID)
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return newRequestID()
@@ -19,42 +22,63 @@ func HandleRequestID(ctx context.Context, validator requestIDValidator) string {
 
 	header, ok := md[DefaultXRequestIDKey]
 	if !ok || len(header) == 0 {
-		return newRequestID()
+		requestID = newRequestID()
+		return requestID
 	}
 
-	requestID := header[0]
+	requestID = header[0]
 	if requestID == "" {
-		return newRequestID()
+		requestID = newRequestID()
+		return requestID
 	}
 
 	if !validator(requestID) {
-		return newRequestID()
+		requestID = newRequestID()
+		return requestID
 	}
 
 	return requestID
 }
 
 func HandleRequestIDChain(ctx context.Context, validator requestIDValidator) string {
+	var res string
+	defer addToResponse(ctx, &res)
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return newRequestID()
+		res = newRequestID()
+		return res
 	}
 
 	header, ok := md[DefaultXRequestIDKey]
 	if !ok || len(header) == 0 {
-		return newRequestID()
+		res = newRequestID()
+		return res
 	}
 
 	requestID := header[0]
 	if requestID == "" {
-		return newRequestID()
+		res = newRequestID()
+		return res
 	}
 
 	if !validator(requestID) {
-		return newRequestID()
+		res = newRequestID()
+		return res
 	}
 
-	return fmt.Sprintf("%s,%s", requestID, newRequestID())
+	newValue := fmt.Sprintf("%s,%s", requestID, newRequestID())
+	addToResponse(ctx, &newValue)
+
+	return newValue
+}
+
+func addToResponse(ctx context.Context, value *string) {
+	if value == nil || *value == "" {
+		x := newRequestID()
+		value = &x
+	}
+	newHeader := metadata.Pairs(DefaultXRequestIDKey, *value)
+	grpc.SendHeader(ctx, newHeader)
 }
 
 func newRequestID() string {

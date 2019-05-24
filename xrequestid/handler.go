@@ -10,7 +10,7 @@ type requestIDKey struct{}
 
 func UnaryServerInterceptor(opt ...Option) grpc.UnaryServerInterceptor {
 	var opts options
-	opts.validator = defaultReqeustIDValidator
+	opts.validator = defaultRequestIDValidator
 	for _, o := range opt {
 		o.apply(&opts)
 	}
@@ -29,7 +29,7 @@ func UnaryServerInterceptor(opt ...Option) grpc.UnaryServerInterceptor {
 
 func StreamServerInterceptor(opt ...Option) grpc.StreamServerInterceptor {
 	var opts options
-	opts.validator = defaultReqeustIDValidator
+	opts.validator = defaultRequestIDValidator
 	for _, o := range opt {
 		o.apply(&opts)
 	}
